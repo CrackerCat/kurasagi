@@ -250,6 +250,7 @@ INVALID_IMAGE_BASE:
 			size_t vSize = sec[i].Misc.VirtualSize ? sec[i].Misc.VirtualSize : sec[i].SizeOfRawData;
 			*outSectionBase = base + sec[i].VirtualAddress;
 			*outSectionSize = vSize;
+			LogVerbose("Section Base: %llx, Size: %llx", base + sec[i].VirtualAddress, vSize);
 			return TRUE;
 		}
 	}

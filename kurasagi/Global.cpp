@@ -14,18 +14,14 @@ NTSTATUS(*gl::RtVar::ZwQuerySystemInformationPtr)(SYSTEM_INFORMATION_CLASS, PVOI
 
 ULONG64* gl::RtVar::KiWaitAlwaysPtr = NULL;
 ULONG64* gl::RtVar::KiWaitNeverPtr = NULL;
-void* (*gl::RtVar::KeGetCurrentPrcbPtr)() = NULL;
 void* gl::RtVar::CcBcbProfilerPtr = NULL;
 void* gl::RtVar::CcBcbProfiler2Ptr = NULL;
 void* gl::RtVar::MaxDataSizePtr = NULL;
 void* gl::RtVar::KiSwInterruptDispatchPtr = NULL;
 void* gl::RtVar::KiMcaDeferredRecoveryServicePtr = NULL;
 void** gl::RtVar::MiVisibleStatePtr = NULL;
-void* gl::RtVar::KeDelayExecutionThreadPtr = NULL;
-void* gl::RtVar::KeWaitForMultipleObjectsPtr = NULL;
-void* gl::RtVar::KeWaitForSingleObjectPtr = NULL;
-NTSTATUS(NTAPI* gl::RtVar::MmAccessFaultPtr)(_In_ ULONG, _In_ PVOID, _In_ KPROCESSOR_MODE, _In_ PVOID) = NULL;
-void* gl::RtVar::KiPageFaultPtr = NULL;
+void* gl::RtVar::MmAccessFaultPtr = NULL;
+void* gl::RtVar::FaultingAddrPtr = NULL;
 void* gl::RtVar::KiBalanceSetManagerDeferredRoutinePtr = NULL;
 KDPC* gl::RtVar::KiBalanceSetManagerPeriodicDpcPtr = NULL;
 
@@ -52,24 +48,28 @@ BOOLEAN gl::RtVar::InitializeRuntimeVariables() {
 	LogVerbose("Kernel Base: %llx, Kernel Size: %llx", KernelBase, KernelSize);
 
 	// Stage 3
+
+	BOOLEAN res = TRUE;
+	res &= PatternSearchNtKernelSection(Pat::CcBcbProfilerSec, Pat::CcBcbProfilerPat, Pat::CcBcbProfilerMask, (uintptr_t*)&CcBcbProfilerPtr);
+	res &= PatternSearchNtKernelSection(Pat::CcBcbProfiler2Sec, Pat::CcBcbProfiler2Pat, Pat::CcBcbProfiler2Mask, (uintptr_t*)&CcBcbProfiler2Ptr);
+	res &= PatternSearchNtKernelSection(Pat::KiMcaDeferredRecoveryServiceSec, Pat::KiMcaDeferredRecoveryServicePat, Pat::KiMcaDeferredRecoveryServiceMask, (uintptr_t*)&KiMcaDeferredRecoveryServicePtr);
+	res &= PatternSearchNtKernelSection(Pat::KiBalanceSetManagerDeferredRoutineSec, Pat::KiBalanceSetManagerDeferredRoutinePat, Pat::KiBalanceSetManagerDeferredRoutineMask, (uintptr_t*)&KiBalanceSetManagerDeferredRoutinePtr);
+	res &= PatternSearchNtKernelSection(Pat::FaultingAddressSec, Pat::FaultingAddressPat, Pat::FaultingAddressMask, (uintptr_t*)&FaultingAddrPtr);
+	res &= PatternSearchNtKernelSection(Pat::MmAccessFaultSec, Pat::MmAccessFaultPat, Pat::MmAccessFaultMask, (uintptr_t*)&MmAccessFaultPtr);
+	res &= PatternSearchNtKernelSection(Pat::KiSwInterruptDispatchSec, Pat::KiSwInterruptDispatchPat, Pat::KiSwInterruptDispatchMask, (uintptr_t*)&KiSwInterruptDispatchPtr);
+
 	KiWaitAlwaysPtr = (ULONG64*)(KernelBase + gl::Offsets::KiWaitAlwaysOff);
 	KiWaitNeverPtr = (ULONG64*)(KernelBase + gl::Offsets::KiWaitNeverOff);
-	KeGetCurrentPrcbPtr = (void* (*)())(KernelBase + gl::Offsets::KeGetCurrentPrcbOff);
-	CcBcbProfilerPtr = (void*)(KernelBase + gl::Offsets::CcBcbProfilerOff);
-	CcBcbProfiler2Ptr = (void*)(KernelBase + gl::Offsets::CcBcbProfiler2Off);
-	KiSwInterruptDispatchPtr = (void*)(KernelBase + gl::Offsets::KiSwInterruptDispatchOff);
 	MaxDataSizePtr = (void*)(KernelBase + gl::Offsets::MaxDataSizeOff);
-	KiMcaDeferredRecoveryServicePtr = (void*)(KernelBase + gl::Offsets::KiMcaDeferredRecoveryServiceOff);
 	MiVisibleStatePtr = (void**)(KernelBase + gl::Offsets::MiVisibleStateOff);
-	KeDelayExecutionThreadPtr = (void*)(KernelBase + gl::Offsets::KeDelayExecutionTheadOff);
-	KeWaitForSingleObjectPtr = (void*)(KernelBase + gl::Offsets::KeWaitForSingleObjectOff);
-	KeWaitForMultipleObjectsPtr = (void*)(KernelBase + gl::Offsets::KeWaitForMultipleObjectsOff);
-	MmAccessFaultPtr = (NTSTATUS(NTAPI*)(_In_ ULONG, _In_ PVOID, _In_ KPROCESSOR_MODE, _In_ PVOID))(KernelBase + gl::Offsets::MmAccessFaultOff);
-	KiPageFaultPtr = (void*)(KernelBase + gl::Offsets::KiPageFaultOff);
 	KiBalanceSetManagerPeriodicDpcPtr = (KDPC*)(KernelBase + gl::Offsets::KiBalanceSetManagerPeriodicDpcOff);
-	KiBalanceSetManagerDeferredRoutinePtr = (void*)(KernelBase + gl::Offsets::KiBalanceSetManagerDeferredRoutineOff);
 
 	Pte::MmPteBase = *(uintptr_t*)(KernelBase + gl::Offsets::MmPteBaseOff);
+
+	if (!res) {
+		LogError("InitializeRuntimeVariables: Couldn't scan signatures...");
+		return FALSE;
+	}
 
 	size_t selfRefIndex = (Pte::MmPteBase >> 39) & 0x1FF;
 	uintptr_t base = Pte::MmPteBase;
@@ -83,17 +83,6 @@ BOOLEAN gl::RtVar::InitializeRuntimeVariables() {
 	
 	Self::SelfBase = (uintptr_t)&__ImageBase;
 	Self::SelfSize = (uintptr_t)&__end - Self::SelfBase;
-
-	uintptr_t res = 0;
-	if (!PatternSearchNtKernelSection(Pat::CcBcbProfilerSec, Pat::CcBcbProfilerPat, Pat::CcBcbProfilerMask, &res)) {
-		LogError("Couldn't find NT Kernel Section");
-		return FALSE;
-	}
-
-	if ((uintptr_t)CcBcbProfilerPtr != res) {
-		LogError("Fuck");
-		return FALSE;
-	}
 
 	return TRUE;
 }

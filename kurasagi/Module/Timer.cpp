@@ -53,7 +53,7 @@ BOOLEAN wsbp::Timer::DisablePatchGuardTimersIdPc(KDPC* Dpc, PVOID DeferredContex
 	LogVerbose("DisablePatchGuardTimersIdPc: Searching for cpu %lu", KeGetCurrentProcessorNumberEx(0));
 
 
-	PKPRCB_STUB pPrcb = (PKPRCB_STUB)gl::RtVar::KeGetCurrentPrcbPtr();
+	PKPRCB_STUB pPrcb = (PKPRCB_STUB)__readgsqword(0x20);
 	KTIMER_TABLE_ENTRY* timerTableEntry = pPrcb->TimerTable.TimerEntries;
 
 	for (size_t j = 0; j < TIMER_TABLE_ENTRY_COUNT; j++) {

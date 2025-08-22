@@ -56,7 +56,7 @@ void HaltNxFault2(PKTRAP_FRAME tf) {
 
 	*(ULONG64*)tf->Rsp = tf->Rip;
 	tf->Rsp += 8;
-	tf->Rip = (ULONG64)gl::RtVar::KeDelayExecutionThreadPtr;
+	tf->Rip = (ULONG64)KeDelayExecutionThread;
 
 	KeLowerIrql(APC_LEVEL);
 	tf->EFlags |= (1 << 9); // enable interrupt
@@ -104,7 +104,7 @@ NTSTATUS NTAPI wsbp::Barricade::HkMmAccessFault(
 ) {
 	
 	// It should be called from KiPageFault..
-	if (_ReturnAddress() == (PVOID)((uintptr_t)gl::RtVar::KiPageFaultPtr + gl::Offsets::FaultingAddressOff)) {
+	if (_ReturnAddress() == gl::RtVar::FaultingAddrPtr) {
 
 		// The Fault is not occured in user mode, nor it is caused by illegal write access.
 		if (!((FaultCode >> 2) & 1) && !((FaultCode >> 1) & 1) && TrapInformation != NULL) {
@@ -252,9 +252,9 @@ BOOLEAN wsbp::Barricade::CustomNxFaultHandler(void* faultAddress, PKTRAP_FRAME t
 		void* value = *valuePtr;
 
 		// Check if it is matched
-		if (value != gl::RtVar::KeDelayExecutionThreadPtr &&
-			value != gl::RtVar::KeWaitForMultipleObjectsPtr &&
-			value != gl::RtVar::KeWaitForSingleObjectPtr) {
+		if (value != KeDelayExecutionThread &&
+			value != KeWaitForMultipleObjects &&
+			value != KeWaitForSingleObject) {
 			continue;
 		}
 
