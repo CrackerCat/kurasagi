@@ -25,8 +25,8 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 		LogError("DriverEntry: Failed to bypass PatchGuard");
 		return STATUS_UNSUCCESSFUL;
 	}
-	
-	
+
+	LogVerbose("Test #1: %p", KeDelayExecutionThread); // Yeah it is fine
 
 	return STATUS_SUCCESS;
 }

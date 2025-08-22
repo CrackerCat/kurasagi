@@ -6,7 +6,7 @@
 #include "Include.hpp"
 
 // If you want log spam, turn on this
-#define VERBOSE_LOGGING
+// #define VERBOSE_LOGGING
 
 #define LogDbgViewInfo(Format, ...) DbgPrintEx(0, 0, "[Kurasagi] INFO: " Format "\n", __VA_ARGS__)
 #define LogDbgViewError(Format, ...) DbgPrintEx(0, 0, "[Kurasagi] ERROR: " Format "\n", __VA_ARGS__)
