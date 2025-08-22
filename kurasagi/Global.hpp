@@ -18,7 +18,6 @@ namespace gl {
 		// Function Offsets.
 		const size_t KiWaitAlwaysOff = 0xFC6260;
 		const size_t KiWaitNeverOff = 0xFC5F80;
-		const size_t KeBugCheckExOff = 0x4FEC10;
 		const size_t KeGetCurrentPrcbOff = 0x442dd0;
 		const size_t CcBcbProfilerOff = 0x50AEF0;
 		const size_t CcBcbProfiler2Off = 0x6F66a0;
@@ -41,10 +40,13 @@ namespace gl {
 
 	namespace RtVar {
 
-		extern void* KernelBase;
+		extern uintptr_t KernelBase;
+		extern size_t KernelSize;
+
+		extern NTSTATUS(*ZwQuerySystemInformationPtr)(SYSTEM_INFORMATION_CLASS, PVOID, ULONG, PULONG);
+
 		extern ULONG64* KiWaitAlwaysPtr;
 		extern ULONG64* KiWaitNeverPtr;
-		extern void* KeBugCheckExPtr;
 		extern void* (*KeGetCurrentPrcbPtr)();
 		extern void* CcBcbProfilerPtr;
 		extern void* CcBcbProfiler2Ptr;

@@ -66,6 +66,20 @@ namespace Hook {
 }
 
 /*
+ * @brief Get Module Information
+ * @param szModuleName: module name
+ * @param outTargetModule: pointer for module entry
+ */
+NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY outTargetModule);
+
+/*
+ * @brief Get Kernel Base and Size.
+ * @param outBase: pointer for kernel base.
+ * @param outSize: pointer for kernel size.
+ */
+BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize);
+
+/*
 * @brief Search Pattern Range.
 * @param start: start.
 * @param end: end.

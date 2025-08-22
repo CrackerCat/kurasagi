@@ -67,6 +67,11 @@ typedef struct _SYSTEM_MODULE_ENTRY
 	UCHAR FullPathName[256];	//0x0028(0x0100)
 } SYSTEM_MODULE_ENTRY, * PSYSTEM_MODULE_ENTRY;
 
+typedef struct _SYSTEM_MODULE_INFORMATION {
+	ULONG Count;
+	SYSTEM_MODULE_ENTRY Module[1];
+} SYSTEM_MODULE_INFORMATION, * PSYSTEM_MODULE_INFORMATION;
+
 typedef struct _MI_VISIBLE_STATE_STUB
 {
 	UCHAR Smth0[0x1468];
@@ -100,3 +105,17 @@ typedef struct _KPRCB_STUB
 	KTIMER_TABLE TimerTable; // +0x4100
 	UCHAR Pad3[19432];
 } KPRCB_STUB, * PKPRCB_STUB;
+
+enum SYSTEM_INFORMATION_CLASS : __int32
+{
+	// ...
+	SystemModuleInformation = 0xB,
+	// ...
+};
+
+typedef NTSTATUS(*NtQuerySystemInformation_t)(
+	SYSTEM_INFORMATION_CLASS SystemInformationClass,
+	PVOID SystemInformaiton,
+	ULONG SystemInformationLenght,
+	PULONG ReturnLength
+	);

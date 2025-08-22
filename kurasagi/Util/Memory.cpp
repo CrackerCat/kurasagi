@@ -170,6 +170,52 @@ BOOLEAN Hook::HookTrampoline(PVOID origFunction, PVOID hookFunction, PVOID gatew
 	return TRUE;
 }
 
+NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY outTargetModule) {
+	ULONG infoLen = 0;
+	auto status = gl::RtVar::ZwQuerySystemInformationPtr(SystemModuleInformation, &infoLen, 0, &infoLen);
+	// It is okay to do this way
+	// It should return 0xC0000004, but it is fine - it fills infoLen
+
+	PSYSTEM_MODULE_INFORMATION pMod = (PSYSTEM_MODULE_INFORMATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, infoLen, KURASAGI_POOL_TAG);
+	if (!pMod) {
+		LogError("GetModuleInformation: Allocation Failed");
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	status = gl::RtVar::ZwQuerySystemInformationPtr(SystemModuleInformation, pMod, infoLen, &infoLen);
+	if (!NT_SUCCESS(status)) {
+		LogError("GetModuleInformation: Second ZwQuery Failed: %x", status);
+		return status;
+	}
+
+	PSYSTEM_MODULE_ENTRY pModEntry = pMod->Module;
+	for (ULONG i = 0; i < pMod->Count; i++) {
+		if (!_stricmp((const char*)pModEntry[i].FullPathName, szModuleName))
+		{
+			*outTargetModule = pModEntry[i];
+			return STATUS_SUCCESS;
+		}
+	}
+
+	LogError("GetModuleInformation: Not Found");
+	return STATUS_NOT_FOUND;
+}
+
+BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize) {
+	SYSTEM_MODULE_ENTRY entry = { 0 };
+	auto status = GetModuleInformation("\\SystemRoot\\system32\\ntoskrnl.exe", &entry);
+
+	if (!NT_SUCCESS(status)) {
+		LogError("GetKernelBaseNSize: Not Found");
+		return FALSE;
+	}
+
+	*outBase = (uintptr_t)entry.ImageBase;
+	*outSize = entry.ImageSize;
+
+	return TRUE;
+}
+
 BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR* pattern, const char* mask, uintptr_t* result) {
 
 	if (!start || !end || !pattern || !mask || !result) {
