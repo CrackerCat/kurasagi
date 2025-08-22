@@ -7,11 +7,21 @@
 
 #include "Include.hpp"
 
+constexpr auto DOTTEXT_SECTION = ".text\x00\x00\x00";
+
 namespace gl {
 
 	// It is not commonly changed (unless kernel changes MmAccessFault's prototype)
 	// So I'll keep that. If issues are present, I'll use LDE for this.
 	const size_t MmAccessFaultInstSize = 15;
+
+	namespace Pat {
+
+		const UCHAR CcBcbProfilerPat[] = { 0x48, 0x89, 0x5C, 0x24, 0x00, 0x48, 0x89, 0x6C, 0x24, 0x00, 0x48, 0x89, 0x74, 0x24, 0x00, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x00, 0x48, 0x8B, 0xF2, 0xE8 };
+		const char CcBcbProfilerMask[] = "xxxx?xxxx?xxxx?xxxxxxxxxxxx?xxxx";
+		const auto CcBcbProfilerSec = DOTTEXT_SECTION;
+
+	}
 
 	namespace Offsets {
 

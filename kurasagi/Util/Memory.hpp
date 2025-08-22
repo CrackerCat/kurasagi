@@ -80,6 +80,16 @@ NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY out
 BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize);
 
 /*
+ * @brief Find PE Section By Name
+ * @param base: PE Image Base
+ * @param sectionName: Section Name
+ * @param outSectionBase: pointer for section base.
+ * @param outSectionSize: pointer for section size.
+ * @return `TRUE` if operation was successful.
+ */
+BOOLEAN FindPeSectionByName(size_t base, const char sectionName[8], uintptr_t* outSectionBase, size_t* outSectionSize);
+
+/*
 * @brief Search Pattern Range.
 * @param start: start.
 * @param end: end.
@@ -89,3 +99,12 @@ BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize);
 * @return `TRUE` if pattern is found.
 */
 BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR* pattern, const char* mask, uintptr_t* result);
+
+/*
+ * @brief Search Pattern in specific NT Kernel Section.
+ * @param sectionName: Section Name
+ * @param pattern: pattern for searching.
+ * @param mask: mask for pattern. 'x' for valid pattern, '?' for wildcard.
+ * @param result: pointer to the result.
+ */
+BOOLEAN PatternSearchNtKernelSection(const char sectionName[8], const UCHAR* pattern, const char* mask, uintptr_t* result);

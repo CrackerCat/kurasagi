@@ -171,6 +171,11 @@ BOOLEAN Hook::HookTrampoline(PVOID origFunction, PVOID hookFunction, PVOID gatew
 }
 
 NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY outTargetModule) {
+	if (!gl::RtVar::ZwQuerySystemInformationPtr) {
+		LogError("GetModuleInformation: ZwQuerySystemInformationPtr not initialized");
+		return STATUS_UNSUCCESSFUL;
+	}
+
 	ULONG infoLen = 0;
 	auto status = gl::RtVar::ZwQuerySystemInformationPtr(SystemModuleInformation, &infoLen, 0, &infoLen);
 	// It is okay to do this way
@@ -216,6 +221,43 @@ BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize) {
 	return TRUE;
 }
 
+BOOLEAN FindPeSectionByName(size_t base, const char sectionName[8], uintptr_t* outSectionBase, size_t* outSectionSize) {
+
+	if (!base || !sectionName || !outSectionBase || !outSectionSize) {
+		LogError("FindPeSectionByName: Invalid Parameter");
+		return FALSE;
+	}
+
+	IMAGE_DOS_HEADER* dos = (IMAGE_DOS_HEADER*)base;
+
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
+INVALID_IMAGE_BASE:
+		LogError("FindPeSectionByName: Invalid Image Base");
+		return FALSE;
+	}
+
+	IMAGE_NT_HEADERS64* nt = (IMAGE_NT_HEADERS64*)(base + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE) {
+		goto INVALID_IMAGE_BASE;
+	}
+
+	IMAGE_FILE_HEADER* file = &nt->FileHeader;
+	IMAGE_SECTION_HEADER* sec = (IMAGE_SECTION_HEADER*)((uintptr_t)&nt->OptionalHeader + file->SizeOfOptionalHeader);
+
+	USHORT nsec = file->NumberOfSections;
+	for (USHORT i = 0; i < nsec; i++) {
+		if (RtlEqualMemory(sec[i].Name, sectionName, 8)) {
+			size_t vSize = sec[i].Misc.VirtualSize ? sec[i].Misc.VirtualSize : sec[i].SizeOfRawData;
+			*outSectionBase = base + sec[i].VirtualAddress;
+			*outSectionSize = vSize;
+			return TRUE;
+		}
+	}
+
+	LogError("FindPeSectionByName: Not found section");
+	return FALSE;
+}
+
 BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR* pattern, const char* mask, uintptr_t* result) {
 
 	if (!start || !end || !pattern || !mask || !result) {
@@ -236,5 +278,28 @@ BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR
 		}
 	}
 
+	LogError("PatternSearchRange: Not Found");
 	return FALSE;
+}
+
+BOOLEAN PatternSearchNtKernelSection(const char sectionName[8], const UCHAR* pattern, const char* mask, uintptr_t* result) {
+	if (!gl::RtVar::KernelBase) {
+		LogError("PatternSearchNtKernelSection: Kernel Base not initialized");
+		return FALSE;
+	}
+
+	uintptr_t sectionBase = 0;
+	size_t sectionSize = 0;
+	if (!FindPeSectionByName(gl::RtVar::KernelBase, sectionName, &sectionBase, &sectionSize)) {
+		return FALSE;
+	}
+
+	unsigned char* start = (unsigned char*)sectionBase;
+	unsigned char* end = (unsigned char*)(sectionBase + sectionSize);
+
+	if (!PatternSearchRange(start, end, pattern, mask, result)) {
+		return FALSE;
+	}
+
+	return TRUE;
 }

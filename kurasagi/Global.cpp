@@ -84,5 +84,16 @@ BOOLEAN gl::RtVar::InitializeRuntimeVariables() {
 	Self::SelfBase = (uintptr_t)&__ImageBase;
 	Self::SelfSize = (uintptr_t)&__end - Self::SelfBase;
 
+	uintptr_t res = 0;
+	if (!PatternSearchNtKernelSection(Pat::CcBcbProfilerSec, Pat::CcBcbProfilerPat, Pat::CcBcbProfilerMask, &res)) {
+		LogError("Couldn't find NT Kernel Section");
+		return FALSE;
+	}
+
+	if ((uintptr_t)CcBcbProfilerPtr != res) {
+		LogError("Fuck");
+		return FALSE;
+	}
+
 	return TRUE;
 }
