@@ -64,10 +64,17 @@ BOOLEAN IsCanonicalAddress(PVOID address) {
 }
 
 UCHAR GetPml4eVaType(size_t index) {
-	if (index < 256 || index >= 512) {
+	if (!gl::RtVar::MiVisibleStatePtr) {
+		LogError("GetPml4eVaType: MiVisibleStatePtr not initialized");
 		return 0xFF;
 	}
-	return ((PMI_VISIBLE_STATE_STUB)*gl::RtVar::MiVisibleStatePtr)->SystemVaType[index - 256];
+
+	if (index < 256 || index >= 512) {
+		LogError("GetPml4eVaType: Invalid index parameter");
+		return 0xFF;
+	}
+
+	return ((PMI_VISIBLE_STATE_STUB)gl::RtVar::MiVisibleStatePtr)->SystemVaType[index - 256];
 }
 
 UINT64* GetPageTableEntryPointer(PVOID v, size_t level) {
@@ -303,4 +310,14 @@ BOOLEAN PatternSearchNtKernelSection(const char sectionName[8], const UCHAR* pat
 	}
 
 	return TRUE;
+}
+
+uintptr_t GetAbsAddrFromRel4B(unsigned int* Rel4BAddr) {
+
+	// There's no x86 instruction that executes like this: 48 8B 05 ?? ?? ?? ?? (Const)...
+	// So we can safely add 1 (4 bytes) to the address (to calculate next RIP)
+	auto ripNext = (uintptr_t)(Rel4BAddr + 1);
+	auto offset = *Rel4BAddr;
+
+	return ripNext + offset;
 }

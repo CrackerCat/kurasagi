@@ -108,3 +108,8 @@ BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR
  * @param result: pointer to the result.
  */
 BOOLEAN PatternSearchNtKernelSection(const char sectionName[8], const UCHAR* pattern, const char* mask, uintptr_t* result);
+
+/*
+ * @brief Get Absolute Address from QWORD PTR [rip+Rel4BAddr] instruction.
+ */
+uintptr_t GetAbsAddrFromRel4B(unsigned int* Rel4BAddr);

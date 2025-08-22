@@ -19,7 +19,7 @@ void* gl::RtVar::CcBcbProfiler2Ptr = NULL;
 void* gl::RtVar::MaxDataSizePtr = NULL;
 void* gl::RtVar::KiSwInterruptDispatchPtr = NULL;
 void* gl::RtVar::KiMcaDeferredRecoveryServicePtr = NULL;
-void** gl::RtVar::MiVisibleStatePtr = NULL;
+void* gl::RtVar::MiVisibleStatePtr = NULL;
 void* gl::RtVar::MmAccessFaultPtr = NULL;
 void* gl::RtVar::FaultingAddrPtr = NULL;
 void* gl::RtVar::KiBalanceSetManagerDeferredRoutinePtr = NULL;
@@ -58,18 +58,44 @@ BOOLEAN gl::RtVar::InitializeRuntimeVariables() {
 	res &= PatternSearchNtKernelSection(Pat::MmAccessFaultSec, Pat::MmAccessFaultPat, Pat::MmAccessFaultMask, (uintptr_t*)&MmAccessFaultPtr);
 	res &= PatternSearchNtKernelSection(Pat::KiSwInterruptDispatchSec, Pat::KiSwInterruptDispatchPat, Pat::KiSwInterruptDispatchMask, (uintptr_t*)&KiSwInterruptDispatchPtr);
 
-	KiWaitAlwaysPtr = (ULONG64*)(KernelBase + gl::Offsets::KiWaitAlwaysOff);
-	KiWaitNeverPtr = (ULONG64*)(KernelBase + gl::Offsets::KiWaitNeverOff);
-	MaxDataSizePtr = (void*)(KernelBase + gl::Offsets::MaxDataSizeOff);
-	MiVisibleStatePtr = (void**)(KernelBase + gl::Offsets::MiVisibleStateOff);
-	KiBalanceSetManagerPeriodicDpcPtr = (KDPC*)(KernelBase + gl::Offsets::KiBalanceSetManagerPeriodicDpcOff);
+	// Stage 4
 
-	Pte::MmPteBase = *(uintptr_t*)(KernelBase + gl::Offsets::MmPteBaseOff);
+	uintptr_t KiWaitAlwaysCode = 0;
+	uintptr_t KiWaitNeverCode = 0;
+	uintptr_t MaxDataSizeCode = 0;
+	uintptr_t MiVisibleStateCode = 0;
+	uintptr_t KiBalanceSetManagerPeriodicDpcCode = 0;
+	uintptr_t MmPteBaseCode = 0;
+
+	res &= PatternSearchNtKernelSection(Pat::KiWaitAlwaysSec, Pat::KiWaitAlwaysPat, Pat::KiWaitAlwaysMask, &KiWaitAlwaysCode);
+	res &= PatternSearchNtKernelSection(Pat::KiWaitNeverSec, Pat::KiWaitNeverPat, Pat::KiWaitNeverMask, &KiWaitNeverCode);
+	res &= PatternSearchNtKernelSection(Pat::MaxDataSizeSec, Pat::MaxDataSizePat, Pat::MaxDataSizeMask, &MaxDataSizeCode);
+	res &= PatternSearchNtKernelSection(Pat::MiVisibleStateSec, Pat::MiVisibleStatePat, Pat::MiVisibleStateMask, &MiVisibleStateCode);
+	res &= PatternSearchNtKernelSection(Pat::MmPteBaseSec, Pat::MmPteBasePat, Pat::MmPteBaseMask, &MmPteBaseCode);
+	res &= PatternSearchNtKernelSection(Pat::KiBalanceSetManagerPeriodicDpcSec, Pat::KiBalanceSetManagerPeriodicDpcPat, Pat::KiBalanceSetManagerPeriodicDpcMask, &KiBalanceSetManagerPeriodicDpcCode);
 
 	if (!res) {
 		LogError("InitializeRuntimeVariables: Couldn't scan signatures...");
 		return FALSE;
 	}
+
+	// Stage 5
+
+	KiWaitAlwaysCode += Pat::KiWaitAlwaysOff;
+	KiWaitNeverCode += Pat::KiWaitNeverOff;
+	MaxDataSizeCode += Pat::MaxDataSizeOff;
+	MiVisibleStateCode += Pat::MiVisibleStateOff;
+	KiBalanceSetManagerPeriodicDpcCode += Pat::KiBalanceSetManagerPeriodicDpcOff;
+	MmPteBaseCode += Pat::MmPteBaseOff;
+
+	KiWaitAlwaysPtr = (ULONG64*)GetAbsAddrFromRel4B((unsigned int*)KiWaitAlwaysCode);
+	KiWaitNeverPtr = (ULONG64*)GetAbsAddrFromRel4B((unsigned int*)KiWaitNeverCode);
+	MaxDataSizePtr = (void*)GetAbsAddrFromRel4B((unsigned int*)MaxDataSizeCode);
+	MiVisibleStatePtr = (void*)GetAbsAddrFromRel4B((unsigned int*)MiVisibleStateCode);
+	KiBalanceSetManagerPeriodicDpcPtr = (KDPC*)GetAbsAddrFromRel4B((unsigned int*)KiBalanceSetManagerPeriodicDpcCode);
+	Pte::MmPteBase = *(uintptr_t*)GetAbsAddrFromRel4B((unsigned int*)MmPteBaseCode);
+
+	// Stage 6
 
 	size_t selfRefIndex = (Pte::MmPteBase >> 39) & 0x1FF;
 	uintptr_t base = Pte::MmPteBase;

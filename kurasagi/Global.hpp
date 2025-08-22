@@ -52,17 +52,63 @@ namespace gl {
 		const UCHAR KiSwInterruptDispatchPat[] = { 0x48, 0x89, 0x4C, 0x24, 0x00, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8D, 0x6C, 0x24, 0x00, 0x48, 0x81, 0xEC, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x3D };
 		const char  KiSwInterruptDispatchMask[] = "xxxx?xxxxxxxxxxxxxxxx?xxx????xxx";
 		const auto  KiSwInterruptDispatchSec = DOTTEXT_SECTION;
-	}
 
-	namespace Offsets {
+		/*
+		We get those address from KeSetTimerEx.
+		*/
 
-		// Function Offsets.
-		const size_t KiWaitAlwaysOff = 0xFC6260;
-		const size_t KiWaitNeverOff = 0xFC5F80;
-		const size_t MaxDataSizeOff = 0xFC5A48;
-		const size_t MiVisibleStateOff = 0xFC44C0;
-		const size_t MmPteBaseOff = 0xFC4478;
-		const size_t KiBalanceSetManagerPeriodicDpcOff = 0xF21660;
+		// KiWaitNever
+		const UCHAR  KiWaitNeverPat[] = { 0x48, 0x8B, 0x05, 0x00, 0x00, 0x00, 0x00, 0x49, 0x8B, 0xEE, 0x48, 0x33, 0x2D };
+		const char   KiWaitNeverMask[] = "xxx????xxxxxx";
+		const auto   KiWaitNeverSec = DOTTEXT_SECTION;
+		const size_t KiWaitNeverOff = 3;
+
+		// KiWaitAlways
+		const UCHAR  KiWaitAlwaysPat[] = { 0x48, 0x33, 0x2D, 0x00, 0x00, 0x00, 0x00, 0x45, 0x0F, 0xB6, 0xE1 };
+		const char   KiWaitAlwaysMask[] = "xxx????xxxx";
+		const auto   KiWaitAlwaysSec = DOTTEXT_SECTION;
+		const size_t KiWaitAlwaysOff = 3;
+
+		/*
+		We get MaxDataSize from KiSwInterruptDispatch.
+		*/
+
+		// MaxDataSize
+		const UCHAR  MaxDataSizePat[] = { 0x48, 0x8B, 0x3D, 0x00, 0x00, 0x00, 0x00, 0x4C, 0x8B, 0xE9 };
+		const char   MaxDataSizeMask[] = "xxx????xxx";
+		const auto   MaxDataSizeSec = DOTTEXT_SECTION;
+		const size_t MaxDataSizeOff = 3;
+
+		/*
+		We get MiVisibleState from MmResourcesAvailable.
+		Actually it is not MiVisibleState, it is dereferenced pointer to it. We don't care
+		*/
+
+		// MiVisibleState
+		const UCHAR  MiVisibleStatePat[] = { 0x48, 0x8D, 0x0D, 0x00, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x90, 0x66, 0x83, 0x83, 0x00, 0x00, 0x00, 0x00, 0x00, 0x75, 0x00, 0x48, 0x8D, 0x8B };
+		const char   MiVisibleStateMask[] = "xxx????x????xxxx?????x?xxx";
+		const auto   MiVisibleStateSec = DOTTEXT_SECTION;
+		const size_t MiVisibleStateOff = 3;
+
+		/*
+		We get KiBalanceSetManagerPeriodicDpc from KiUpdateTime.
+		*/
+
+		// KiBalanceSetManagerPeriodicDpc
+		const UCHAR  KiBalanceSetManagerPeriodicDpcPat[] = { 0x48, 0x8D, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x45, 0x33, 0xC0, 0x89, 0x05 };
+		const char   KiBalanceSetManagerPeriodicDpcMask[] = "xxx????xxxxx";
+		const auto   KiBalanceSetManagerPeriodicDpcSec = DOTTEXT_SECTION;
+		const size_t KiBalanceSetManagerPeriodicDpcOff = 3;
+
+		/*
+		We get MmPteBase from KiMarkBugCheckRegions.
+		*/
+
+		// MmPteBase
+		const UCHAR  MmPteBasePat[] = { 0x48, 0x8B, 0x05, 0x00, 0x00, 0x00, 0x00, 0x48, 0xC1, 0xEB, 0x00, 0x48, 0x8D, 0x49, 0x00, 0x49, 0x23, 0xD8, 0x48, 0x03, 0xD8, 0x48, 0x83, 0xEA, 0x00, 0x75, 0x00, 0x45, 0x33, 0xC9, 0x8B, 0xD6, 0x44, 0x8B, 0xC2 };
+		const char   MmPteBaseMask[] = "xxx????xxx?xxx?xxxxxxxxx?x?xxxxxxxx";
+		const auto   MmPteBaseSec = DOTTEXT_SECTION;
+		const size_t MmPteBaseOff = 3;
 	}
 
 	namespace RtVar {
@@ -79,7 +125,7 @@ namespace gl {
 		extern void* MaxDataSizePtr;
 		extern void* KiSwInterruptDispatchPtr;
 		extern void* KiMcaDeferredRecoveryServicePtr;
-		extern void** MiVisibleStatePtr;
+		extern void* MiVisibleStatePtr;
 		extern void* MmAccessFaultPtr;
 		extern void* FaultingAddrPtr;
 		extern void* KiBalanceSetManagerDeferredRoutinePtr;
