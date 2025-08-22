@@ -67,8 +67,7 @@ UCHAR GetPml4eVaType(size_t index) {
 	if (index < 256 || index >= 512) {
 		return 0xFF;
 	}
-	UCHAR* systemVaType = (UCHAR*)((uintptr_t)*gl::RtVar::MiVisibleStatePtr + gl::Offsets::SystemVaTypeOff);
-	return systemVaType[index - 256];
+	return ((PMI_VISIBLE_STATE_STUB)*gl::RtVar::MiVisibleStatePtr)->SystemVaType[index - 256];
 }
 
 UINT64* GetPageTableEntryPointer(PVOID v, size_t level) {
@@ -169,4 +168,27 @@ BOOLEAN Hook::HookTrampoline(PVOID origFunction, PVOID hookFunction, PVOID gatew
 	// jmp [rip+0x00] | Hook
 	
 	return TRUE;
+}
+
+BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR* pattern, const char* mask, uintptr_t* result) {
+
+	if (!start || !end || !pattern || !mask || !result) {
+		LogError("PatternSearchRange: Invalid Parameter");
+		return FALSE;
+	}
+
+	size_t m = strlen(mask);
+
+	for (auto ptr = start; ptr + m <= end; ptr++) {
+		size_t j = 0;
+		for (; j < m; j++) {
+			if (mask[j] == 'x' && ptr[j] != pattern[j]) break;
+		}
+		if (j == m) {
+			*result = (uintptr_t)ptr;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }

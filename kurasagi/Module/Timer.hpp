@@ -7,13 +7,6 @@
 
 #include "../Include.hpp"
 
-typedef struct _KTIMER_TABLE_ENTRY
-{
-	unsigned __int64 Lock;
-	_LIST_ENTRY Entry;
-	_ULARGE_INTEGER Time;
-} KTIMER_TABLE_ENTRY, * PKTIMER_TABLE_ENTRY;
-
 namespace wsbp {
 	namespace Timer {
 

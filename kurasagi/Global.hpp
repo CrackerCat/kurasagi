@@ -9,35 +9,9 @@
 
 namespace gl {
 
-	namespace Constants {
-		const size_t TimerTableEntryCount = 512;
-
-		namespace MiSystemVaType {
-			constexpr INT32 MiVaUnused = 0x0;
-			constexpr INT32 MiVaProcessSpace = 0x1;
-			constexpr INT32 MiVaBootLoaded = 0x2;
-			constexpr INT32 MiVaPfnDatabase = 0x3;
-			constexpr INT32 MiVaNonPagedPool = 0x4;
-			constexpr INT32 MiVaPagedPool = 0x5;
-			constexpr INT32 MiVaNonCachedMappings = 0x6;
-			constexpr INT32 MiVaSystemCache = 0x7;
-			constexpr INT32 MiVaSystemPtes = 0x8;
-			constexpr INT32 MiVaHal = 0x9;
-			constexpr INT32 MiVaNonCachedMappingsLarge = 0xa;
-			constexpr INT32 MiVaDriverImages = 0xb;
-			constexpr INT32 MiVaSystemPtesLarge = 0xc;
-			constexpr INT32 MiVaKernelStacks = 0xd;
-			constexpr INT32 MiVaSecureNonPagedPool = 0xe;
-			constexpr INT32 MiVaKernelShadowStacks = 0xf;
-			constexpr INT32 MiVaSoftWsles = 0x10;
-			constexpr INT32 MiVaSystemDataViews = 0x11;
-			constexpr INT32 MiVaKernelControlFlowGuard = 0x12;
-			constexpr INT32 MiVaKasan = 0x13;
-			constexpr INT32 MiVaMaximumType = 0x14;
-		}
-
-		const size_t MmAccessFaultInstSize = 15;
-	}
+	// It is not commonly changed (unless kernel changes MmAccessFault's prototype)
+	// So I'll keep that. If issues are present, I'll use LDE for this.
+	const size_t MmAccessFaultInstSize = 15;
 
 	namespace Offsets {
 
@@ -60,15 +34,6 @@ namespace gl {
 		const size_t KiPageFaultOff = 0x6b3440;
 		const size_t KiBalanceSetManagerDeferredRoutineOff = 0x499c80;
 		const size_t KiBalanceSetManagerPeriodicDpcOff = 0xF21660;
-
-		// Timer
-		const size_t PrcbTimerTableOff = 0x4100;
-		const size_t TimerTableEntryOff = 0x200;
-		const size_t HalReservedOff = 0x48;
-		const size_t AcpiReservedOff = 0xE0;
-
-		// MiVisibleState
-		const size_t SystemVaTypeOff = 0x1468;
 
 		// KiPageFault->MmAccessFault
 		const size_t FaultingAddressOff = 0x386 + 0x5;

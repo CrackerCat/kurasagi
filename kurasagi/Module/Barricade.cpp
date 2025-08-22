@@ -73,7 +73,7 @@ BOOLEAN ToIgnoreIpxe(size_t ipxeIndex) {
 		return TRUE;
 	}
 
-	using namespace gl::Constants::MiSystemVaType;
+	using namespace MiSystemVaType;
 
 	INT32 toIgnoreList[] = {
 		MiVaProcessSpace,
@@ -370,7 +370,7 @@ VOID wsbp::Barricade::FlipPteNxBit() {
 
 BOOLEAN wsbp::Barricade::InjectCustomInterruptHandler() {
 
-	if (!Hook::HookTrampoline(gl::RtVar::MmAccessFaultPtr, HkMmAccessFault, TrampolineArea, gl::Constants::MmAccessFaultInstSize)) {
+	if (!Hook::HookTrampoline(gl::RtVar::MmAccessFaultPtr, HkMmAccessFault, TrampolineArea, gl::MmAccessFaultInstSize)) {
 		LogError("InjectCustomInterruptHandler: Couldn't initiate hook for MmAccessFault");
 		return FALSE;
 	}

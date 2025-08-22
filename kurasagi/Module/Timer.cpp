@@ -52,10 +52,11 @@ BOOLEAN wsbp::Timer::DisablePatchGuardTimersIdPc(KDPC* Dpc, PVOID DeferredContex
 	
 	LogVerbose("DisablePatchGuardTimersIdPc: Searching for cpu %lu", KeGetCurrentProcessorNumberEx(0));
 
-	KTIMER_TABLE_ENTRY* timerTableEntry = \
-		(KTIMER_TABLE_ENTRY*)((uintptr_t)gl::RtVar::KeGetCurrentPrcbPtr() + gl::Offsets::PrcbTimerTableOff + gl::Offsets::TimerTableEntryOff);
 
-	for (size_t j = 0; j < gl::Constants::TimerTableEntryCount; j++) {
+	PKPRCB_STUB pPrcb = (PKPRCB_STUB)gl::RtVar::KeGetCurrentPrcbPtr();
+	KTIMER_TABLE_ENTRY* timerTableEntry = pPrcb->TimerTable.TimerEntries;
+
+	for (size_t j = 0; j < TIMER_TABLE_ENTRY_COUNT; j++) {
 
 		PKTIMER_TABLE_ENTRY timerEntry = &timerTableEntry[j];
 
@@ -88,14 +89,14 @@ BOOLEAN wsbp::Timer::DisablePatchGuardTimersIdPc(KDPC* Dpc, PVOID DeferredContex
 	}
 
 	// Now we should check PRCB->AcpiReserved and PRCB->HalReserved.
-	PVOID* halReservedPtr = (PVOID*)((uintptr_t)gl::RtVar::KeGetCurrentPrcbPtr() + gl::Offsets::HalReservedOff);
+	unsigned __int64* halReservedPtr = &pPrcb->HalReserved[0];
 
 	if (halReservedPtr[7] != NULL) { // HalReserved[7] is used for storing PatchGuard timer DPC.
-		LogInfo("DisablePatchGuardTimersIdPc: Disabled HalReserved Dpc %p at CPU %lu", halReservedPtr[7], KeGetCurrentProcessorNumberEx(0));
+		LogInfo("DisablePatchGuardTimersIdPc: Disabled HalReserved Dpc %llx at CPU %lu", halReservedPtr[7], KeGetCurrentProcessorNumberEx(0));
 		halReservedPtr[7] = NULL;
 	}
 
-	PVOID* acpiReservedPtr = (PVOID*)((uintptr_t)gl::RtVar::KeGetCurrentPrcbPtr() + gl::Offsets::AcpiReservedOff);
+	PVOID* acpiReservedPtr = &pPrcb->AcpiReserved;
 
 	if (*acpiReservedPtr != NULL) {
 		LogInfo("DisablePatchGuardTimersIdPc: Disabled AcpiReserved Dpc %p at CPU %lu", *acpiReservedPtr, KeGetCurrentProcessorNumberEx(0));

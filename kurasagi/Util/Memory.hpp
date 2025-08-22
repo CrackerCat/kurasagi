@@ -45,6 +45,7 @@ UINT64* GetLastPageTableEntryPointer(PVOID v);
 /*
  * @brief Get Pml4 index of address.
  */
+
 size_t GetPml4Index(PVOID address);
 
 /*
@@ -63,3 +64,14 @@ namespace Hook {
 	BOOLEAN HookTrampoline(PVOID origFunction, PVOID hookFunction, PVOID gateway, size_t len);
 
 }
+
+/*
+* @brief Search Pattern Range.
+* @param start: start.
+* @param end: end.
+* @param pattern: pattern for searching.
+* @param mask: mask for pattern. 'x' for valid pattern, '?' for wildcard.
+* @param result: the result is storing here.
+* @return `TRUE` if pattern is found.
+*/
+BOOLEAN PatternSearchRange(unsigned char* start, unsigned char* end, const UCHAR* pattern, const char* mask, uintptr_t* result);
