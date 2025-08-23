@@ -189,6 +189,8 @@ NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY out
 	// It should return 0xC0000004, but it is fine - it fills infoLen
 
 	PSYSTEM_MODULE_INFORMATION pMod = (PSYSTEM_MODULE_INFORMATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, infoLen, KURASAGI_POOL_TAG);
+	PSYSTEM_MODULE_ENTRY pModEntry = nullptr;
+
 	if (!pMod) {
 		LogError("GetModuleInformation: Allocation Failed");
 		return STATUS_INSUFFICIENT_RESOURCES;
@@ -197,20 +199,25 @@ NTSTATUS GetModuleInformation(const char* szModuleName, PSYSTEM_MODULE_ENTRY out
 	status = gl::RtVar::ZwQuerySystemInformationPtr(SystemModuleInformation, pMod, infoLen, &infoLen);
 	if (!NT_SUCCESS(status)) {
 		LogError("GetModuleInformation: Second ZwQuery Failed: %x", status);
-		return status;
+		goto GMI_FREE_AND_RETURN;
 	}
 
-	PSYSTEM_MODULE_ENTRY pModEntry = pMod->Module;
+	pModEntry = pMod->Module;
 	for (ULONG i = 0; i < pMod->Count; i++) {
 		if (!_stricmp((const char*)pModEntry[i].FullPathName, szModuleName))
 		{
 			*outTargetModule = pModEntry[i];
-			return STATUS_SUCCESS;
+			status = STATUS_SUCCESS;
+			goto GMI_FREE_AND_RETURN;
 		}
 	}
 
 	LogError("GetModuleInformation: Not Found");
-	return STATUS_NOT_FOUND;
+	status = STATUS_NOT_FOUND;
+
+GMI_FREE_AND_RETURN:
+	ExFreePoolWithTag(pMod, KURASAGI_POOL_TAG);
+	return status;
 }
 
 BOOLEAN GetKernelBaseNSize(uintptr_t* outBase, size_t* outSize) {
